@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # Read variables passed on by GIT
 read OLDREV NEWREV REFNAME
@@ -43,14 +43,14 @@ fi
 # Construct message
 if [ "$OLDREV" = "$NULLREV" ]
 then
-  MSG="$USER_LINK created branch $BRANCH_LINK of $REPO_LINK"
+  MSG="$USER_LINK created branch $BRANCH_LINK"
   HIPCHAT_COLOR="green"
 elif [ "$NEWREV" = "$NULLREV" ]
 then
-  MSG="$USER_LINK deleted branch $BRANCH of $REPO_LINK"
+  MSG="$USER_LINK deleted branch $BRANCH"
   HIPCHAT_COLOR="red"
 else
-  TITLE="$USER_LINK pushed to branch $BRANCH_LINK of $REPO_LINK"
+  TITLE="$USER_LINK pushed to branch $BRANCH_LINK"
   if [ -n "$GITWEB" ]
   then
     LOG=`$GIT_EXEC log $OLDREV..$NEWREV --format="- %s (<a href=\"http://$GITWEB/?p=$REPO;a=commitdiff;h=%H\">%h</a>)"`
@@ -70,8 +70,12 @@ else
   then
     LOG=`echo -e "$LOG" | sed "s/\([A-Z]\{2,\}\-[0-9]\{1,\}\)/<a href=\"http:\/\/$JIRA\/browse\/\1\">\1<\/a>/g"`
   fi
-  MSG="$TITLE\n$LOG"
+  COMMITS=`$GIT_EXEC rev-list $OLDREV..$NEWREV --count`
+  MSG="$TITLE ($COMMITS commits)"
 fi
 
 # Send it to HipChat
-echo -e "$MSG" | $HIPCHAT_SCRIPT -c "$HIPCHAT_COLOR" -t "$HIPCHAT_TOKEN" -r "$HIPCHAT_ROOM" -f "$HIPCHAT_FROM" > /dev/null
+if [[ $REFNAME != refs/tags/* ]]
+then
+  echo -e "$MSG" | $HIPCHAT_SCRIPT -c "$HIPCHAT_COLOR" -t "$HIPCHAT_TOKEN" -r "$HIPCHAT_ROOM" -f "$HIPCHAT_FROM" > /dev/null
+fi
